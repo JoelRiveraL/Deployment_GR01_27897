@@ -4,7 +4,7 @@
 ### (docker-compose.prod.yaml, .env.prod.template, init-db.sql)
 
 ## 2. Configurar el archivo de entorno
-### El archivo se proporciono por Whatsapp
+### Cambia de nombre al archivo 'env.prod.template' a '.env'
 
 ## 3. Ejecutar el despliegue
 ### docker-compose -f docker-compose.prod.yaml up -d
