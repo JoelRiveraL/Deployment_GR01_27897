@@ -1,0 +1,95 @@
+# ========================================
+# 🚀 AcaDance - Docker Compose Production
+# ========================================
+# Solo imágenes pre-compiladas (SIN código fuente)
+# Para despliegue en servidor del profesor
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: acadance-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # OPCIONAL: Descomentar si quieres incluir un dump de inicialización
+      # ⚠️ SOLO con datos de PRUEBA, NO datos reales del cliente
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - acadance-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend NestJS (Imagen pre-compilada desde Docker Hub)
+  backend:
+    image: ${DOCKER_REGISTRY}/acadance-backend:${VERSION:-latest}
+    container_name: acadance-backend
+    restart: unless-stopped
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-postgres}
+      
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-1h}
+      
+      # Email
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.mailtrap.io}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
+      
+      # App
+      PORT: 3000
+      NODE_ENV: production
+    ports:
+      - "${BACKEND_PORT:-3002}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - acadance-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Next.js (Imagen pre-compilada desde Docker Hub)
+  frontend:
+    image: ${DOCKER_REGISTRY}/acadance-frontend:${VERSION:-latest}
+    container_name: acadance-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3002}
+    ports:
+      - "${FRONTEND_PORT:-3005}:3005"
+    depends_on:
+      - backend
+    networks:
+      - acadance-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3005 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  acadance-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
