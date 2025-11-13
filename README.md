@@ -9,7 +9,7 @@
 ## 3. Ejecutar el despliegue
 ### docker-compose -f docker-compose.prod.yaml up -d
 
-## 4. Crear BASE DE DATOS
+## 4. Crear BASE DE DATOS (Solo ejecutar estos 2 comandos despues del despliegue)
 docker cp init-db.sql acadance-postgres:/tmp/init-db.sql
 
 docker exec acadance-postgres psql -U postgres -f /tmp/init-db.sql
