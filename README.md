@@ -11,6 +11,7 @@
 
 ## 4. Crear BASE DE DATOS
 docker cp init-db.sql acadance-postgres:/tmp/init-db.sql
+
 docker exec acadance-postgres psql -U postgres -f /tmp/init-db.sql
 
 LISTO Grupo 1
